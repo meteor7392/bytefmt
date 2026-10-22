@@ -1,0 +1,14 @@
+[package]
+name = "bytefmt"
+version = "0.1.0"
+edition = "2021"
+description = "Parse, format, and convert human-readable byte sizes"
+license = "MIT"
+
+[lib]
+name = "bytefmt"
+path = "src/lib.rs"
+
+[[bin]]
+name = "bytefmt"
+path = "src/main.rs"
