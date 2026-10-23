@@ -1,4 +1,5 @@
 use std::fmt;
+use std::str::FromStr;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ByteSize(pub u64);
@@ -25,6 +26,14 @@ impl fmt::Display for ParseError {
             ParseError::UnknownUnit => write!(f, "unknown byte unit"),
             ParseError::Overflow => write!(f, "value is too large"),
         }
+    }
+}
+
+impl FromStr for ByteSize {
+    type Err = ParseError;
+
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        ByteSize::parse(input)
     }
 }
 
@@ -153,5 +162,11 @@ mod tests {
     #[test]
     fn display_uses_binary() {
         assert_eq!(ByteSize(1024).to_string(), "1.00 KiB");
+    }
+
+    #[test]
+    fn from_str_matches_parse() {
+        assert_eq!("2.5 GiB".parse::<ByteSize>().unwrap(), ByteSize::parse("2.5 GiB").unwrap());
+        assert_eq!("".parse::<ByteSize>().unwrap_err(), ParseError::Empty);
     }
 }
