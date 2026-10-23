@@ -1,4 +1,5 @@
 use std::fmt;
+use std::ops::{Add, Div, Mul, Sub};
 use std::str::FromStr;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -104,6 +105,34 @@ impl fmt::Display for ByteSize {
     }
 }
 
+impl Add for ByteSize {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self {
+        ByteSize(self.0.saturating_add(rhs.0))
+    }
+}
+
+impl Sub for ByteSize {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self {
+        ByteSize(self.0.saturating_sub(rhs.0))
+    }
+}
+
+impl Mul<u64> for ByteSize {
+    type Output = Self;
+    fn mul(self, rhs: u64) -> Self {
+        ByteSize(self.0.saturating_mul(rhs))
+    }
+}
+
+impl Div<u64> for ByteSize {
+    type Output = Self;
+    fn div(self, rhs: u64) -> Self {
+        ByteSize(self.0 / rhs.max(1))
+    }
+}
+
 fn unit_multiplier(unit: &str) -> Result<f64, ParseError> {
     let value = match unit {
         "" | "b" | "byte" | "bytes" => 1.0,
@@ -168,5 +197,13 @@ mod tests {
     fn from_str_matches_parse() {
         assert_eq!("2.5 GiB".parse::<ByteSize>().unwrap(), ByteSize::parse("2.5 GiB").unwrap());
         assert_eq!("".parse::<ByteSize>().unwrap_err(), ParseError::Empty);
+    }
+
+    #[test]
+    fn arithmetic_operations() {
+        assert_eq!(ByteSize(100) + ByteSize(200), ByteSize(300));
+        assert_eq!(ByteSize(300) - ByteSize(100), ByteSize(200));
+        assert_eq!(ByteSize(100) * 3, ByteSize(300));
+        assert_eq!(ByteSize(300) / 3, ByteSize(100));
     }
 }
