@@ -26,7 +26,8 @@ fn run() -> Result<(), String> {
             let bytes: u64 = bytes_text
                 .parse()
                 .map_err(|_| "invalid byte count".to_string())?;
-            let system = parse_system(get_option(&args, "--unit").as_deref().unwrap_or("binary"))?;
+            let system = parse_system(get_option(&args, "--unit").as_deref().unwrap_or("binary"))
+                .map_err(|error| error.to_string())?;
             let precision: usize = get_option(&args, "--precision")
                 .unwrap_or_else(|| "2".to_string())
                 .parse()
@@ -40,7 +41,8 @@ fn run() -> Result<(), String> {
                 get_option(&args, "--to")
                     .ok_or_else(|| "missing --to unit system".to_string())?
                     .as_str(),
-            )?;
+            )
+            .map_err(|error| error.to_string())?;
             let precision: usize = get_option(&args, "--precision")
                 .unwrap_or_else(|| "2".to_string())
                 .parse()
@@ -66,12 +68,8 @@ fn get_option(args: &[String], name: &str) -> Option<String> {
     None
 }
 
-fn parse_system(value: &str) -> Result<UnitSystem, String> {
-    match value.to_ascii_lowercase().as_str() {
-        "binary" | "bin" => Ok(UnitSystem::Binary),
-        "decimal" | "dec" => Ok(UnitSystem::Decimal),
-        _ => Err(format!("unknown unit system: {value}")),
-    }
+fn parse_system(value: &str) -> Result<UnitSystem, ParseError> {
+    UnitSystem::parse(value)
 }
 
 fn print_usage() {

@@ -1,5 +1,7 @@
 use std::fmt;
-use std::ops::{Add, Div, Mul, Sub};
+use std::ops::{
+    Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign,
+};
 use std::str::FromStr;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -30,6 +32,8 @@ impl fmt::Display for ParseError {
     }
 }
 
+impl std::error::Error for ParseError {}
+
 impl FromStr for ByteSize {
     type Err = ParseError;
 
@@ -39,6 +43,20 @@ impl FromStr for ByteSize {
 }
 
 impl ByteSize {
+    pub const ZERO: Self = Self(0);
+
+    pub fn new(value: u64) -> Self {
+        Self(value)
+    }
+
+    pub fn as_u64(self) -> u64 {
+        self.0
+    }
+
+    pub fn bytes(&self) -> u64 {
+        self.0
+    }
+
     pub fn parse(input: &str) -> Result<Self, ParseError> {
         let input = input.trim();
         if input.is_empty() {
@@ -99,9 +117,40 @@ impl ByteSize {
     }
 }
 
+impl UnitSystem {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            UnitSystem::Binary => "binary",
+            UnitSystem::Decimal => "decimal",
+        }
+    }
+
+    pub fn parse(input: &str) -> Result<Self, ParseError> {
+        match input.trim().to_ascii_lowercase().as_str() {
+            "binary" | "bin" => Ok(UnitSystem::Binary),
+            "decimal" | "dec" => Ok(UnitSystem::Decimal),
+            _ => Err(ParseError::UnknownUnit),
+        }
+    }
+}
+
+impl FromStr for UnitSystem {
+    type Err = ParseError;
+
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        UnitSystem::parse(input)
+    }
+}
+
 impl fmt::Display for ByteSize {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.format(UnitSystem::Binary, 2))
+    }
+}
+
+impl fmt::Display for UnitSystem {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
     }
 }
 
@@ -112,10 +161,22 @@ impl Add for ByteSize {
     }
 }
 
+impl AddAssign for ByteSize {
+    fn add_assign(&mut self, rhs: Self) {
+        self.0 = self.0.saturating_add(rhs.0);
+    }
+}
+
 impl Sub for ByteSize {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self {
         ByteSize(self.0.saturating_sub(rhs.0))
+    }
+}
+
+impl SubAssign for ByteSize {
+    fn sub_assign(&mut self, rhs: Self) {
+        self.0 = self.0.saturating_sub(rhs.0);
     }
 }
 
@@ -126,10 +187,29 @@ impl Mul<u64> for ByteSize {
     }
 }
 
+impl Mul<ByteSize> for u64 {
+    type Output = ByteSize;
+    fn mul(self, rhs: ByteSize) -> ByteSize {
+        rhs * self
+    }
+}
+
+impl MulAssign<u64> for ByteSize {
+    fn mul_assign(&mut self, rhs: u64) {
+        self.0 = self.0.saturating_mul(rhs);
+    }
+}
+
 impl Div<u64> for ByteSize {
     type Output = Self;
     fn div(self, rhs: u64) -> Self {
         ByteSize(self.0 / rhs.max(1))
+    }
+}
+
+impl DivAssign<u64> for ByteSize {
+    fn div_assign(&mut self, rhs: u64) {
+        self.0 /= rhs.max(1);
     }
 }
 
@@ -205,5 +285,43 @@ mod tests {
         assert_eq!(ByteSize(300) - ByteSize(100), ByteSize(200));
         assert_eq!(ByteSize(100) * 3, ByteSize(300));
         assert_eq!(ByteSize(300) / 3, ByteSize(100));
+    }
+
+    #[test]
+    fn unit_system_from_str() {
+        assert_eq!("binary".parse::<UnitSystem>().unwrap(), UnitSystem::Binary);
+        assert_eq!("dec".parse::<UnitSystem>().unwrap(), UnitSystem::Decimal);
+        assert!(UnitSystem::parse("nope").is_err());
+    }
+
+    #[test]
+    fn compound_assignment_operations() {
+        let mut size = ByteSize(10);
+        size += ByteSize(5);
+        assert_eq!(size, ByteSize(15));
+        size -= ByteSize(3);
+        assert_eq!(size, ByteSize(12));
+        size *= 2;
+        assert_eq!(size, ByteSize(24));
+        size /= 4;
+        assert_eq!(size, ByteSize(6));
+    }
+
+    #[test]
+    fn u64_multiplies_byte_size() {
+        assert_eq!(2 * ByteSize(3), ByteSize(6));
+    }
+
+    #[test]
+    fn accesses_byte_count() {
+        assert_eq!(ByteSize(42).as_u64(), 42);
+        assert_eq!(ByteSize(42).bytes(), 42);
+        assert_eq!(ByteSize::ZERO, ByteSize(0));
+    }
+
+    #[test]
+    fn parse_error_is_std_error() {
+        let error: Box<dyn std::error::Error> = Box::new(ParseError::Empty);
+        assert_eq!(error.to_string(), "input is empty");
     }
 }
