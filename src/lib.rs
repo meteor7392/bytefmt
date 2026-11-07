@@ -1,10 +1,11 @@
 use std::fmt;
+use std::hash::Hash;
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign,
 };
 use std::str::FromStr;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct ByteSize(pub u64);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -34,6 +35,18 @@ impl fmt::Display for ParseError {
 
 impl std::error::Error for ParseError {}
 
+impl From<u64> for ByteSize {
+    fn from(value: u64) -> Self {
+        ByteSize(value)
+    }
+}
+
+impl From<ByteSize> for u64 {
+    fn from(value: ByteSize) -> Self {
+        value.0
+    }
+}
+
 impl FromStr for ByteSize {
     type Err = ParseError;
 
@@ -49,6 +62,58 @@ impl ByteSize {
         Self(value)
     }
 
+    pub fn from_bytes(value: u64) -> Self {
+        Self(value)
+    }
+
+    pub fn from_kilobytes(value: f64) -> Self {
+        Self(value * 1_000.0).round().max(0.0) as u64).into()
+    }
+
+    pub fn from_megabytes(value: f64) -> Self {
+        Self(value * 1_000_000.0).round().max(0.0) as u64).into()
+    }
+
+    pub fn from_gigabytes(value: f64) -> Self {
+        Self(value * 1_000_000_000.0).round().max(0.0) as u64).into()
+    }
+
+    pub fn from_terabytes(value: f64) -> Self {
+        Self(value * 1_000_000_000_000.0).round().max(0.0) as u64).into()
+    }
+
+    pub fn from_petabytes(value: f64) -> Self {
+        Self(value * 1_000_000_000_000_000.0).round().max(0.0) as u64).into()
+    }
+
+    pub fn from_exabytes(value: f64) -> Self {
+        Self(value * 1_000_000_000_000_000_000.0).round().max(0.0) as u64).into()
+    }
+
+    pub fn from_kibibytes(value: f64) -> Self {
+        Self(value * 1024.0).round().max(0.0) as u64).into()
+    }
+
+    pub fn from_mebibytes(value: f64) -> Self {
+        Self(value * 1_048_576.0).round().max(0.0) as u64).into()
+    }
+
+    pub fn from_gibibytes(value: f64) -> Self {
+        Self(value * 1_073_741_824.0).round().max(0.0) as u64).into()
+    }
+
+    pub fn from_tebibytes(value: f64) -> Self {
+        Self(value * 1_099_511_627_776.0).round().max(0.0) as u64).into()
+    }
+
+    pub fn from_pebibytes(value: f64) -> Self {
+        Self(value * 1_125_899_906_842_624.0).round().max(0.0) as u64).into()
+    }
+
+    pub fn from_exbibytes(value: f64) -> Self {
+        Self(value * 1_152_921_504_606_846_976.0).round().max(0.0) as u64).into()
+    }
+
     pub fn as_u64(self) -> u64 {
         self.0
     }
@@ -58,7 +123,7 @@ impl ByteSize {
     }
 
     pub fn kilobytes(&self) -> f64 {
-        self.0 as f64 / 1000.0
+        self.0 as f64 / 1_000.0
     }
 
     pub fn megabytes(&self) -> f64 {
@@ -67,6 +132,18 @@ impl ByteSize {
 
     pub fn gigabytes(&self) -> f64 {
         self.0 as f64 / 1_000_000_000.0
+    }
+
+    pub fn terabytes(&self) -> f64 {
+        self.0 as f64 / 1_000_000_000_000.0
+    }
+
+    pub fn petabytes(&self) -> f64 {
+        self.0 as f64 / 1_000_000_000_000_000.0
+    }
+
+    pub fn exabytes(&self) -> f64 {
+        self.0 as f64 / 1_000_000_000_000_000_000.0
     }
 
     pub fn kibibytes(&self) -> f64 {
@@ -79,6 +156,18 @@ impl ByteSize {
 
     pub fn gibibytes(&self) -> f64 {
         self.0 as f64 / 1_073_741_824.0
+    }
+
+    pub fn tebibytes(&self) -> f64 {
+        self.0 as f64 / 1_099_511_627_776.0
+    }
+
+    pub fn pebibytes(&self) -> f64 {
+        self.0 as f64 / 1_125_899_906_842_624.0
+    }
+
+    pub fn exbibytes(&self) -> f64 {
+        self.0 as f64 / 1_152_921_504_606_846_976.0
     }
 
     pub fn parse(input: &str) -> Result<Self, ParseError> {
@@ -240,18 +329,32 @@ impl DivAssign<u64> for ByteSize {
 fn unit_multiplier(unit: &str) -> Result<f64, ParseError> {
     let value = match unit {
         "" | "b" | "byte" | "bytes" => 1.0,
-        "k" | "ki" | "kib" => 1024.0,
-        "kb" => 1000.0,
-        "m" | "mi" | "mib" => 1024.0 * 1024.0,
-        "mb" => 1000.0 * 1000.0,
-        "g" | "gi" | "gib" => 1024.0 * 1024.0 * 1024.0,
-        "gb" => 1000.0 * 1000.0 * 1000.0,
-        "t" | "ti" | "tib" => 1024.0 * 1024.0 * 1024.0 * 1024.0,
-        "tb" => 1000.0 * 1000.0 * 1000.0 * 1000.0,
-        "p" | "pi" | "pib" => 1024.0 * 1024.0 * 1024.0 * 1024.0 * 1024.0,
-        "pb" => 1000.0 * 1000.0 * 1000.0 * 1000.0 * 1000.0,
-        "e" | "ei" | "eib" => 1024.0 * 1024.0 * 1024.0 * 1024.0 * 1024.0 * 1024.0,
-        "eb" => 1000.0 * 1000.0 * 1000.0 * 1000.0 * 1000.0 * 1000.0,
+        "k" | "ki" | "kib" | "kibibyte" | "kibibytes" => 1024.0,
+        "kb" | "kilobyte" | "kilobytes" => 1000.0,
+        "m" | "mi" | "mib" | "mebibyte" | "mebibytes" => 1024.0 * 1024.0,
+        "mb" | "megabyte" | "megabytes" => 1000.0 * 1000.0,
+        "g" | "gi" | "gib" | "gibibyte" | "gibibytes" => {
+            1024.0 * 1024.0 * 1024.0
+        }
+        "gb" | "gigabyte" | "gigabytes" => 1000.0 * 1000.0 * 1000.0,
+        "t" | "ti" | "tib" | "tebibyte" | "tebibytes" => {
+            1024.0 * 1024.0 * 1024.0 * 1024.0
+        }
+        "tb" | "terabyte" | "terabytes" => {
+            1000.0 * 1000.0 * 1000.0 * 1000.0
+        }
+        "p" | "pi" | "pib" | "pebibyte" | "pebibytes" => {
+            1024.0 * 1024.0 * 1024.0 * 1024.0 * 1024.0
+        }
+        "pb" | "petabyte" | "petabytes" => {
+            1000.0 * 1000.0 * 1000.0 * 1000.0 * 1000.0
+        }
+        "e" | "ei" | "eib" | "exbibyte" | "exbibytes" => {
+            1024.0 * 1024.0 * 1024.0 * 1024.0 * 1024.0 * 1024.0
+        }
+        "eb" | "exabyte" | "exabytes" => {
+            1000.0 * 1000.0 * 1000.0 * 1000.0 * 1000.0 * 1000.0
+        }
         _ => return Err(ParseError::UnknownUnit),
     };
     Ok(value)
@@ -354,5 +457,37 @@ mod tests {
         assert!((ByteSize(1_000_000).kilobytes() - 1000.0).abs() < f64::EPSILON);
         assert!((ByteSize(1024).kibibytes() - 1.0).abs() < f64::EPSILON);
         assert!((ByteSize(1_073_741_824).gibibytes() - 1.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn additional_unit_conversion_helpers() {
+        assert!((ByteSize(1_000_000_000_000).terabytes() - 1.0).abs() < 1e-9);
+        assert!((ByteSize(1_000_000_000_000_000).petabytes() - 1.0).abs() < 1e-9);
+        assert!((ByteSize(1_000_000_000_000_000_000).exabytes() - 1.0).abs() < 1e-9);
+        assert!((ByteSize(1_099_511_627_776).tebibytes() - 1.0).abs() < 1e-9);
+        assert!((ByteSize(1_125_899_906_842_624).pebibytes() - 1.0).abs() < 1e-9);
+        assert!((ByteSize(1_152_921_504_606_846_976).exbibytes() - 1.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn from_u64_and_to_u64() {
+        assert_eq!(ByteSize::from(42u64), ByteSize(42));
+        assert_eq!(u64::from(ByteSize(42)), 42);
+    }
+
+    #[test]
+    fn from_unit_constructors() {
+        assert_eq!(ByteSize::from_kilobytes(1.0), ByteSize(1000));
+        assert_eq!(ByteSize::from_kibibytes(1.0), ByteSize(1024));
+        assert_eq!(ByteSize::from_exabytes(1.0), ByteSize(1_000_000_000_000_000_000));
+        assert_eq!(ByteSize::from_exbibytes(1.0), ByteSize(1_152_921_504_606_846_976));
+    }
+
+    #[test]
+    fn parses_full_unit_names() {
+        assert_eq!(ByteSize::parse("1 kibibyte").unwrap(), ByteSize(1024));
+        assert_eq!(ByteSize::parse("1.5 megabytes").unwrap(), ByteSize(1_500_000));
+        assert_eq!(ByteSize::parse("2 terabytes").unwrap(), ByteSize(2_000_000_000_000));
+        assert_eq!(ByteSize::parse("3 pebibytes").unwrap(), ByteSize(3_377_699_720_527_872));
     }
 }
