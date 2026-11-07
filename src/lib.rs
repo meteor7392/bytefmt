@@ -67,51 +67,51 @@ impl ByteSize {
     }
 
     pub fn from_kilobytes(value: f64) -> Self {
-        Self(value * 1_000.0).round().max(0.0) as u64).into()
+        Self((value * 1_000.0).round().max(0.0) as u64)
     }
 
     pub fn from_megabytes(value: f64) -> Self {
-        Self(value * 1_000_000.0).round().max(0.0) as u64).into()
+        Self((value * 1_000_000.0).round().max(0.0) as u64)
     }
 
     pub fn from_gigabytes(value: f64) -> Self {
-        Self(value * 1_000_000_000.0).round().max(0.0) as u64).into()
+        Self((value * 1_000_000_000.0).round().max(0.0) as u64)
     }
 
     pub fn from_terabytes(value: f64) -> Self {
-        Self(value * 1_000_000_000_000.0).round().max(0.0) as u64).into()
+        Self((value * 1_000_000_000_000.0).round().max(0.0) as u64)
     }
 
     pub fn from_petabytes(value: f64) -> Self {
-        Self(value * 1_000_000_000_000_000.0).round().max(0.0) as u64).into()
+        Self((value * 1_000_000_000_000_000.0).round().max(0.0) as u64)
     }
 
     pub fn from_exabytes(value: f64) -> Self {
-        Self(value * 1_000_000_000_000_000_000.0).round().max(0.0) as u64).into()
+        Self((value * 1_000_000_000_000_000_000.0).round().max(0.0) as u64)
     }
 
     pub fn from_kibibytes(value: f64) -> Self {
-        Self(value * 1024.0).round().max(0.0) as u64).into()
+        Self((value * 1024.0).round().max(0.0) as u64)
     }
 
     pub fn from_mebibytes(value: f64) -> Self {
-        Self(value * 1_048_576.0).round().max(0.0) as u64).into()
+        Self((value * 1_048_576.0).round().max(0.0) as u64)
     }
 
     pub fn from_gibibytes(value: f64) -> Self {
-        Self(value * 1_073_741_824.0).round().max(0.0) as u64).into()
+        Self((value * 1_073_741_824.0).round().max(0.0) as u64)
     }
 
     pub fn from_tebibytes(value: f64) -> Self {
-        Self(value * 1_099_511_627_776.0).round().max(0.0) as u64).into()
+        Self((value * 1_099_511_627_776.0).round().max(0.0) as u64)
     }
 
     pub fn from_pebibytes(value: f64) -> Self {
-        Self(value * 1_125_899_906_842_624.0).round().max(0.0) as u64).into()
+        Self((value * 1_125_899_906_842_624.0).round().max(0.0) as u64)
     }
 
     pub fn from_exbibytes(value: f64) -> Self {
-        Self(value * 1_152_921_504_606_846_976.0).round().max(0.0) as u64).into()
+        Self((value * 1_152_921_504_606_846_976.0).round().max(0.0) as u64)
     }
 
     pub fn as_u64(self) -> u64 {
