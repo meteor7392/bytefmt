@@ -57,6 +57,30 @@ impl ByteSize {
         self.0
     }
 
+    pub fn kilobytes(&self) -> f64 {
+        self.0 as f64 / 1000.0
+    }
+
+    pub fn megabytes(&self) -> f64 {
+        self.0 as f64 / 1_000_000.0
+    }
+
+    pub fn gigabytes(&self) -> f64 {
+        self.0 as f64 / 1_000_000_000.0
+    }
+
+    pub fn kibibytes(&self) -> f64 {
+        self.0 as f64 / 1024.0
+    }
+
+    pub fn mebibytes(&self) -> f64 {
+        self.0 as f64 / 1_048_576.0
+    }
+
+    pub fn gibibytes(&self) -> f64 {
+        self.0 as f64 / 1_073_741_824.0
+    }
+
     pub fn parse(input: &str) -> Result<Self, ParseError> {
         let input = input.trim();
         if input.is_empty() {
@@ -323,5 +347,12 @@ mod tests {
     fn parse_error_is_std_error() {
         let error: Box<dyn std::error::Error> = Box::new(ParseError::Empty);
         assert_eq!(error.to_string(), "input is empty");
+    }
+
+    #[test]
+    fn unit_conversion_helpers() {
+        assert!((ByteSize(1_000_000).kilobytes() - 1000.0).abs() < f64::EPSILON);
+        assert!((ByteSize(1024).kibibytes() - 1.0).abs() < f64::EPSILON);
+        assert!((ByteSize(1_073_741_824).gibibytes() - 1.0).abs() < f64::EPSILON);
     }
 }
