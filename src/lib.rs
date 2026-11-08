@@ -122,6 +122,26 @@ impl ByteSize {
         self.0
     }
 
+    pub fn checked_add(self, rhs: Self) -> Option<Self> {
+        self.0.checked_add(rhs.0).map(Self)
+    }
+
+    pub fn checked_sub(self, rhs: Self) -> Option<Self> {
+        self.0.checked_sub(rhs.0).map(Self)
+    }
+
+    pub fn checked_mul(self, rhs: u64) -> Option<Self> {
+        self.0.checked_mul(rhs).map(Self)
+    }
+
+    pub fn checked_div(self, rhs: u64) -> Option<Self> {
+        if rhs == 0 {
+            None
+        } else {
+            Some(Self(self.0 / rhs))
+        }
+    }
+
     pub fn kilobytes(&self) -> f64 {
         self.0 as f64 / 1_000.0
     }
@@ -502,5 +522,14 @@ mod tests {
         assert_eq!(ByteSize(1024).scaled(UnitSystem::Binary), (1.0, "KiB"));
         assert_eq!(ByteSize(512).scaled(UnitSystem::Binary), (512.0, "B"));
         assert_eq!(ByteSize(1500).scaled(UnitSystem::Decimal), (1.5, "KB"));
+    }
+
+    #[test]
+    fn checked_arithmetic() {
+        assert_eq!(ByteSize(u64::MAX).checked_add(ByteSize(1)), None);
+        assert_eq!(ByteSize(5).checked_sub(ByteSize(10)), None);
+        assert_eq!(ByteSize(u64::MAX / 2 + 1).checked_mul(2), None);
+        assert_eq!(ByteSize(10).checked_div(0), None);
+        assert_eq!(ByteSize(10).checked_div(3), Some(ByteSize(3)));
     }
 }
