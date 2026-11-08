@@ -210,6 +210,16 @@ impl ByteSize {
     }
 
     pub fn format(&self, system: UnitSystem, precision: usize) -> String {
+        let (scaled, unit) = self.scaled(system);
+
+        if unit == "B" {
+            format!("{} B", self.0)
+        } else {
+            format!("{:.*} {}", precision, scaled, unit)
+        }
+    }
+
+    pub fn scaled(&self, system: UnitSystem) -> (f64, &'static str) {
         let (base, units): (f64, &[&str]) = match system {
             UnitSystem::Binary => (1024.0, &["B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB"]),
             UnitSystem::Decimal => (1000.0, &["B", "KB", "MB", "GB", "TB", "PB", "EB"]),
@@ -222,11 +232,7 @@ impl ByteSize {
             exponent += 1;
         }
 
-        if exponent == 0 {
-            format!("{} B", self.0)
-        } else {
-            format!("{:.*} {}", precision, scaled, units[exponent])
-        }
+        (scaled, units[exponent])
     }
 }
 
@@ -489,5 +495,12 @@ mod tests {
         assert_eq!(ByteSize::parse("1.5 megabytes").unwrap(), ByteSize(1_500_000));
         assert_eq!(ByteSize::parse("2 terabytes").unwrap(), ByteSize(2_000_000_000_000));
         assert_eq!(ByteSize::parse("3 pebibytes").unwrap(), ByteSize(3_377_699_720_527_872));
+    }
+
+    #[test]
+    fn scaled_values() {
+        assert_eq!(ByteSize(1024).scaled(UnitSystem::Binary), (1.0, "KiB"));
+        assert_eq!(ByteSize(512).scaled(UnitSystem::Binary), (512.0, "B"));
+        assert_eq!(ByteSize(1500).scaled(UnitSystem::Decimal), (1.5, "KB"));
     }
 }
