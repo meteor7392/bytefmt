@@ -122,6 +122,18 @@ impl ByteSize {
         self.0
     }
 
+    pub fn min(self, rhs: Self) -> Self {
+        Self(self.0.min(rhs.0))
+    }
+
+    pub fn max(self, rhs: Self) -> Self {
+        Self(self.0.max(rhs.0))
+    }
+
+    pub fn abs_diff(self, rhs: Self) -> Self {
+        Self(self.0.abs_diff(rhs.0))
+    }
+
     pub fn checked_add(self, rhs: Self) -> Option<Self> {
         self.0.checked_add(rhs.0).map(Self)
     }
@@ -531,5 +543,13 @@ mod tests {
         assert_eq!(ByteSize(u64::MAX / 2 + 1).checked_mul(2), None);
         assert_eq!(ByteSize(10).checked_div(0), None);
         assert_eq!(ByteSize(10).checked_div(3), Some(ByteSize(3)));
+    }
+
+    #[test]
+    fn value_helpers() {
+        assert_eq!(ByteSize(10).min(ByteSize(20)), ByteSize(10));
+        assert_eq!(ByteSize(10).max(ByteSize(20)), ByteSize(20));
+        assert_eq!(ByteSize(10).abs_diff(ByteSize(25)), ByteSize(15));
+        assert_eq!(ByteSize(25).abs_diff(ByteSize(10)), ByteSize(15));
     }
 }
