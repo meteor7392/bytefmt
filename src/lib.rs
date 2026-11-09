@@ -55,6 +55,19 @@ impl FromStr for ByteSize {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct FormattedByteSize {
+    pub size: ByteSize,
+    pub system: UnitSystem,
+    pub precision: usize,
+}
+
+impl fmt::Display for FormattedByteSize {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.size.format(self.system, self.precision))
+    }
+}
+
 impl ByteSize {
     pub const ZERO: Self = Self(0);
 
@@ -257,6 +270,14 @@ impl ByteSize {
 
     pub fn format_decimal(&self, precision: usize) -> String {
         self.format(UnitSystem::Decimal, precision)
+    }
+
+    pub fn with_precision(&self, system: UnitSystem, precision: usize) -> FormattedByteSize {
+        FormattedByteSize {
+            size: *self,
+            system,
+            precision,
+        }
     }
 
     pub fn scaled(&self, system: UnitSystem) -> (f64, &'static str) {
@@ -566,5 +587,12 @@ mod tests {
         assert_eq!(ByteSize(10).max(ByteSize(20)), ByteSize(20));
         assert_eq!(ByteSize(10).abs_diff(ByteSize(25)), ByteSize(15));
         assert_eq!(ByteSize(25).abs_diff(ByteSize(10)), ByteSize(15));
+    }
+
+    #[test]
+    fn with_precision_helper() {
+        let formatted = ByteSize(1536).with_precision(UnitSystem::Binary, 2);
+        assert_eq!(formatted.to_string(), "1.50 KiB");
+        assert_eq!(ByteSize(512).with_precision(UnitSystem::Binary, 2).to_string(), "512 B");
     }
 }
