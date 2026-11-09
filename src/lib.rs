@@ -79,6 +79,10 @@ impl ByteSize {
         Self(value)
     }
 
+    pub fn is_zero(&self) -> bool {
+        self.0 == 0
+    }
+
     pub fn from_kilobytes(value: f64) -> Self {
         Self((value * 1_000.0).round().max(0.0) as u64)
     }
@@ -594,5 +598,12 @@ mod tests {
         let formatted = ByteSize(1536).with_precision(UnitSystem::Binary, 2);
         assert_eq!(formatted.to_string(), "1.50 KiB");
         assert_eq!(ByteSize(512).with_precision(UnitSystem::Binary, 2).to_string(), "512 B");
+    }
+
+    #[test]
+    fn is_zero_helper() {
+        assert!(ByteSize::ZERO.is_zero());
+        assert!(ByteSize(0).is_zero());
+        assert!(!ByteSize(1).is_zero());
     }
 }
