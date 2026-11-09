@@ -251,6 +251,14 @@ impl ByteSize {
         }
     }
 
+    pub fn format_binary(&self, precision: usize) -> String {
+        self.format(UnitSystem::Binary, precision)
+    }
+
+    pub fn format_decimal(&self, precision: usize) -> String {
+        self.format(UnitSystem::Decimal, precision)
+    }
+
     pub fn scaled(&self, system: UnitSystem) -> (f64, &'static str) {
         let (base, units): (f64, &[&str]) = match system {
             UnitSystem::Binary => (1024.0, &["B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB"]),
@@ -431,6 +439,13 @@ mod tests {
         assert_eq!(ByteSize(1024).format(UnitSystem::Binary, 2), "1.00 KiB");
         assert_eq!(ByteSize(1500).format(UnitSystem::Decimal, 1), "1.5 KB");
         assert_eq!(ByteSize(512).format(UnitSystem::Binary, 2), "512 B");
+    }
+
+    #[test]
+    fn convenience_formats_values() {
+        assert_eq!(ByteSize(1024).format_binary(2), "1.00 KiB");
+        assert_eq!(ByteSize(1500).format_decimal(1), "1.5 KB");
+        assert_eq!(ByteSize(512).format_binary(2), "512 B");
     }
 
     #[test]
