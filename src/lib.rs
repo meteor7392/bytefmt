@@ -151,6 +151,108 @@ impl ByteSize {
         Self(self.0.abs_diff(rhs.0))
     }
 
+    pub fn is_power_of_two(self) -> bool {
+        self.0.is_power_of_two()
+    }
+
+    pub fn next_power_of_two(self) -> Self {
+        Self(self.0.next_power_of_two())
+    }
+
+    pub fn checked_next_power_of_two(self) -> Option<Self> {
+        self.0.checked_next_power_of_two().map(Self)
+    }
+
+    pub fn previous_power_of_two(self) -> Self {
+        if self.0 == 0 {
+            Self(0)
+        } else {
+            Self(1u64 << (63 - self.0.leading_zeros()))
+        }
+    }
+
+    pub fn prev_power_of_two(self) -> Self {
+        self.previous_power_of_two()
+    }
+
+    pub fn checked_previous_power_of_two(self) -> Option<Self> {
+        if self.0 == 0 {
+            None
+        } else {
+            Some(Self(1u64 << (63 - self.0.leading_zeros())))
+        }
+    }
+
+    pub fn checked_prev_power_of_two(self) -> Option<Self> {
+        self.checked_previous_power_of_two()
+    }
+
+    pub fn is_multiple_of(self, rhs: Self) -> bool {
+        rhs.0 != 0 && self.0 % rhs.0 == 0
+    }
+
+    pub fn is_aligned_to(self, alignment: Self) -> bool {
+        self.is_multiple_of(alignment)
+    }
+
+    pub fn align_down(self, alignment: Self) -> Self {
+        if alignment.0 == 0 {
+            self
+        } else {
+            Self(self.0 - (self.0 % alignment.0))
+        }
+    }
+
+    pub fn align_up(self, alignment: Self) -> Self {
+        if alignment.0 == 0 {
+            self
+        } else {
+            let remainder = self.0 % alignment.0;
+            if remainder == 0 {
+                self
+            } else {
+                Self(self.0.saturating_add(alignment.0 - remainder))
+            }
+        }
+    }
+
+    pub fn checked_align_down(self, alignment: Self) -> Option<Self> {
+        if alignment.0 == 0 {
+            None
+        } else {
+            Some(Self(self.0 - (self.0 % alignment.0)))
+        }
+    }
+
+    pub fn checked_align_up(self, alignment: Self) -> Option<Self> {
+        if alignment.0 == 0 {
+            None
+        } else {
+            let remainder = self.0 % alignment.0;
+            if remainder == 0 {
+                Some(self)
+            } else {
+                self.0.checked_add(alignment.0 - remainder).map(Self)
+            }
+        }
+    }
+
+    pub fn next_multiple_of(self, rhs: Self) -> Self {
+        self.align_up(rhs)
+    }
+
+    pub fn prev_multiple_of(self, rhs: Self) -> Self {
+        self.align_down(rhs)
+    }
+
+    pub fn checked_next_multiple_of(self, rhs: Self) -> Option<Self> {
+        self.checked_align_up(rhs)
+    }
+
+    pub fn checked_prev_multiple_of(self, rhs: Self) -> Option<Self> {
+        self.checked_align_down(rhs)
+    }
+
     pub fn clamp(self, min: Self, max: Self) -> Self {
         if self.0 < min.0 {
             min
@@ -692,5 +794,43 @@ mod tests {
         let mut size = ByteSize(10);
         size %= ByteSize(3);
         assert_eq!(size, ByteSize(1));
+    }
+
+    #[test]
+    fn power_of_two_helpers() {
+        assert!(ByteSize(8).is_power_of_two());
+        assert!(!ByteSize(12).is_power_of_two());
+        assert_eq!(ByteSize(5).next_power_of_two(), ByteSize(8));
+        assert_eq!(ByteSize(8).next_power_of_two(), ByteSize(8));
+        assert_eq!(ByteSize(0).next_power_of_two(), ByteSize(1));
+        assert_eq!(ByteSize(5).checked_next_power_of_two(), Some(ByteSize(8)));
+        assert_eq!(ByteSize(u64::MAX).checked_next_power_of_two(), None);
+        assert_eq!(ByteSize(5).previous_power_of_two(), ByteSize(4));
+        assert_eq!(ByteSize(8).previous_power_of_two(), ByteSize(8));
+        assert_eq!(ByteSize(0).previous_power_of_two(), ByteSize(0));
+        assert_eq!(ByteSize(5).checked_previous_power_of_two(), Some(ByteSize(4)));
+        assert_eq!(ByteSize(0).checked_previous_power_of_two(), None);
+        assert_eq!(ByteSize(5).prev_power_of_two(), ByteSize(4));
+        assert_eq!(ByteSize(5).checked_prev_power_of_two(), Some(ByteSize(4)));
+    }
+
+    #[test]
+    fn alignment_helpers() {
+        assert!(ByteSize(12).is_multiple_of(ByteSize(4)));
+        assert!(!ByteSize(12).is_multiple_of(ByteSize(5)));
+        assert!(!ByteSize(12).is_multiple_of(ByteSize(0)));
+        assert!(ByteSize(12).is_aligned_to(ByteSize(4)));
+        assert_eq!(ByteSize(10).align_down(ByteSize(4)), ByteSize(8));
+        assert_eq!(ByteSize(10).align_up(ByteSize(4)), ByteSize(12));
+        assert_eq!(ByteSize(8).align_up(ByteSize(4)), ByteSize(8));
+        assert_eq!(ByteSize(10).checked_align_down(ByteSize(4)), Some(ByteSize(8)));
+        assert_eq!(ByteSize(10).checked_align_up(ByteSize(4)), Some(ByteSize(12)));
+        assert_eq!(ByteSize(10).checked_align_down(ByteSize(0)), None);
+        assert_eq!(ByteSize(10).checked_align_up(ByteSize(0)), None);
+        assert_eq!(ByteSize(10).next_multiple_of(ByteSize(4)), ByteSize(12));
+        assert_eq!(ByteSize(10).prev_multiple_of(ByteSize(4)), ByteSize(8));
+        assert_eq!(ByteSize(10).checked_next_multiple_of(ByteSize(4)), Some(ByteSize(12)));
+        assert_eq!(ByteSize(10).checked_prev_multiple_of(ByteSize(4)), Some(ByteSize(8)));
+        assert_eq!(ByteSize(u64::MAX).align_up(ByteSize(4)), ByteSize(u64::MAX));
     }
 }
