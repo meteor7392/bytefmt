@@ -195,6 +195,10 @@ impl ByteSize {
         self.is_multiple_of(alignment)
     }
 
+    pub fn is_divisible_by(self, rhs: Self) -> bool {
+        self.is_multiple_of(rhs)
+    }
+
     pub fn align_down(self, alignment: Self) -> Self {
         if alignment.0 == 0 {
             self
@@ -307,11 +311,7 @@ impl ByteSize {
     }
 
     pub fn div_ceil<R: Into<u64>>(self, rhs: R) -> Self {
-        let rhs = rhs.into();
-        if rhs == 0 {
-            return self;
-        }
-        let rhs = rhs.max(1);
+        let rhs = rhs.into().max(1);
         Self(self.0 / rhs + if self.0 % rhs == 0 { 0 } else { 1 })
     }
 
@@ -322,6 +322,98 @@ impl ByteSize {
         } else {
             Self(self.0 / rhs)
         }
+    }
+
+    pub fn quotient(self, rhs: Self) -> u64 {
+        self.0 / rhs.0.max(1)
+    }
+
+    pub fn checked_quotient(self, rhs: Self) -> Option<u64> {
+        if rhs.0 == 0 {
+            None
+        } else {
+            Some(self.0 / rhs.0)
+        }
+    }
+
+    pub fn saturating_quotient(self, rhs: Self) -> u64 {
+        if rhs.0 == 0 {
+            0
+        } else {
+            self.0 / rhs.0
+        }
+    }
+
+    pub fn round_down(self, alignment: Self) -> Self {
+        self.align_down(alignment)
+    }
+
+    pub fn round_up(self, alignment: Self) -> Self {
+        self.align_up(alignment)
+    }
+
+    pub fn round_to_nearest(self, alignment: Self) -> Self {
+        if alignment.0 == 0 {
+            return self;
+        }
+        let remainder = self.0 % alignment.0;
+        if remainder.saturating_mul(2) >= alignment.0 {
+            self.align_up(alignment)
+        } else {
+            self.align_down(alignment)
+        }
+    }
+
+    pub fn round_to(self, alignment: Self) -> Self {
+        self.round_to_nearest(alignment)
+    }
+
+    pub fn round_down_to(self, alignment: Self) -> Self {
+        self.round_down(alignment)
+    }
+
+    pub fn round_up_to(self, alignment: Self) -> Self {
+        self.round_up(alignment)
+    }
+
+    pub fn round_nearest_to(self, alignment: Self) -> Self {
+        self.round_to_nearest(alignment)
+    }
+
+    pub fn floor_to(self, alignment: Self) -> Self {
+        self.align_down(alignment)
+    }
+
+    pub fn ceil_to(self, alignment: Self) -> Self {
+        self.align_up(alignment)
+    }
+
+    pub fn round_to_multiple_of(self, alignment: Self) -> Self {
+        self.round_to(alignment)
+    }
+
+    pub fn checked_round_down(self, alignment: Self) -> Option<Self> {
+        self.checked_align_down(alignment)
+    }
+
+    pub fn checked_round_up(self, alignment: Self) -> Option<Self> {
+        self.checked_align_up(alignment)
+    }
+
+    pub fn checked_round_to_nearest(self, alignment: Self) -> Option<Self> {
+        if alignment.0 == 0 {
+            return None;
+        }
+        let remainder = self.0 % alignment.0;
+        if remainder.saturating_mul(2) >= alignment.0 {
+            self.checked_align_up(alignment)
+        } else {
+            Some(self.align_down(alignment))
+        }
+    }
+
+    pub fn checked_round_to(self, alignment: Self) -> Option<Self> {
+        self.checked_round_to_nearest(alignment)
     }
 
     pub fn kilobytes(&self) -> f64 {
@@ -872,5 +964,33 @@ mod tests {
         assert_eq!(ByteSize(10).checked_div(ByteSize(0)), None);
         assert_eq!(ByteSize(10).checked_rem(ByteSize(3)), Some(ByteSize(1)));
         assert_eq!(ByteSize(10).checked_rem(ByteSize(0)), None);
+    }
+
+    #[test]
+    fn quotient_helpers() {
+        assert_eq!(ByteSize(10).quotient(ByteSize(3)), 3);
+        assert_eq!(ByteSize(10).checked_quotient(ByteSize(3)), Some(3));
+        assert_eq!(ByteSize(10).checked_quotient(ByteSize(0)), None);
+        assert_eq!(ByteSize(10).saturating_quotient(ByteSize(0)), 0);
+        assert_eq!(ByteSize(10).saturating_quotient(ByteSize(3)), 3);
+        assert!(ByteSize(12).is_divisible_by(ByteSize(4)));
+        assert!(!ByteSize(12).is_divisible_by(ByteSize(5)));
+    }
+
+    #[test]
+    fn zero_divisor_remainder_assignment_is_safe() {
+        let mut size = ByteSize(10);
+        size %= 0;
+        assert_eq!(size, ByteSize(10));
+
+        let mut size = ByteSize(10);
+        size %= ByteSize(0);
+        assert_eq!(size, ByteSize(10));
+    }
+
+    #[test]
+    fn zero_divisor_division_ceil_is_safe() {
+        assert_eq!(ByteSize(10).div_ceil(0), ByteSize(10));
+        assert_eq!(ByteSize(10).div_ceil(ByteSize(0)), ByteSize(10));
     }
 }
