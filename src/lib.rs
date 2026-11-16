@@ -287,7 +287,8 @@ impl ByteSize {
         self.0.checked_mul(rhs).map(Self)
     }
 
-    pub fn checked_div(self, rhs: u64) -> Option<Self> {
+    pub fn checked_div<R: Into<u64>>(self, rhs: R) -> Option<Self> {
+        let rhs = rhs.into();
         if rhs == 0 {
             None
         } else {
@@ -295,8 +296,32 @@ impl ByteSize {
         }
     }
 
-    pub fn checked_rem(self, rhs: u64) -> Option<Self> {
+    pub fn checked_rem<R: Into<u64>>(self, rhs: R) -> Option<Self> {
+        let rhs = rhs.into();
         self.0.checked_rem(rhs).map(Self)
+    }
+
+    pub fn div_floor<R: Into<u64>>(self, rhs: R) -> Self {
+        let rhs = rhs.into().max(1);
+        Self(self.0 / rhs)
+    }
+
+    pub fn div_ceil<R: Into<u64>>(self, rhs: R) -> Self {
+        let rhs = rhs.into();
+        if rhs == 0 {
+            return self;
+        }
+        let rhs = rhs.max(1);
+        Self(self.0 / rhs + if self.0 % rhs == 0 { 0 } else { 1 })
+    }
+
+    pub fn saturating_div<R: Into<u64>>(self, rhs: R) -> Self {
+        let rhs = rhs.into();
+        if rhs == 0 {
+            Self(0)
+        } else {
+            Self(self.0 / rhs)
+        }
     }
 
     pub fn kilobytes(&self) -> f64 {
@@ -832,5 +857,20 @@ mod tests {
         assert_eq!(ByteSize(10).checked_next_multiple_of(ByteSize(4)), Some(ByteSize(12)));
         assert_eq!(ByteSize(10).checked_prev_multiple_of(ByteSize(4)), Some(ByteSize(8)));
         assert_eq!(ByteSize(u64::MAX).align_up(ByteSize(4)), ByteSize(u64::MAX));
+    }
+
+    #[test]
+    fn division_helpers() {
+        assert_eq!(ByteSize(10).div_floor(3), ByteSize(3));
+        assert_eq!(ByteSize(10).div_floor(ByteSize(3)), ByteSize(3));
+        assert_eq!(ByteSize(10).div_ceil(3), ByteSize(4));
+        assert_eq!(ByteSize(10).div_ceil(ByteSize(3)), ByteSize(4));
+        assert_eq!(ByteSize(9).div_ceil(3), ByteSize(3));
+        assert_eq!(ByteSize(10).saturating_div(0), ByteSize(0));
+        assert_eq!(ByteSize(10).saturating_div(3), ByteSize(3));
+        assert_eq!(ByteSize(10).checked_div(ByteSize(3)), Some(ByteSize(3)));
+        assert_eq!(ByteSize(10).checked_div(ByteSize(0)), None);
+        assert_eq!(ByteSize(10).checked_rem(ByteSize(3)), Some(ByteSize(1)));
+        assert_eq!(ByteSize(10).checked_rem(ByteSize(0)), None);
     }
 }
