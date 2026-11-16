@@ -1,7 +1,7 @@
 use std::fmt;
 use std::hash::Hash;
 use std::ops::{
-    Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign,
+    Add, AddAssign, Div, DivAssign, Mul, MulAssign, Rem, RemAssign, Sub, SubAssign,
 };
 use std::str::FromStr;
 
@@ -151,6 +151,28 @@ impl ByteSize {
         Self(self.0.abs_diff(rhs.0))
     }
 
+    pub fn clamp(self, min: Self, max: Self) -> Self {
+        if self.0 < min.0 {
+            min
+        } else if self.0 > max.0 {
+            max
+        } else {
+            self
+        }
+    }
+
+    pub fn saturating_add(self, rhs: Self) -> Self {
+        Self(self.0.saturating_add(rhs.0))
+    }
+
+    pub fn saturating_sub(self, rhs: Self) -> Self {
+        Self(self.0.saturating_sub(rhs.0))
+    }
+
+    pub fn saturating_mul(self, rhs: u64) -> Self {
+        Self(self.0.saturating_mul(rhs))
+    }
+
     pub fn checked_add(self, rhs: Self) -> Option<Self> {
         self.0.checked_add(rhs.0).map(Self)
     }
@@ -169,6 +191,10 @@ impl ByteSize {
         } else {
             Some(Self(self.0 / rhs))
         }
+    }
+
+    pub fn checked_rem(self, rhs: u64) -> Option<Self> {
+        self.0.checked_rem(rhs).map(Self)
     }
 
     pub fn kilobytes(&self) -> f64 {
@@ -397,6 +423,32 @@ impl DivAssign<u64> for ByteSize {
     }
 }
 
+impl Rem<u64> for ByteSize {
+    type Output = Self;
+    fn rem(self, rhs: u64) -> Self {
+        ByteSize(self.0 % rhs.max(1))
+    }
+}
+
+impl RemAssign<u64> for ByteSize {
+    fn rem_assign(&mut self, rhs: u64) {
+        self.0 %= rhs.max(1);
+    }
+}
+
+impl Rem<ByteSize> for ByteSize {
+    type Output = Self;
+    fn rem(self, rhs: Self) -> Self {
+        ByteSize(self.0 % rhs.0.max(1))
+    }
+}
+
+impl RemAssign<ByteSize> for ByteSize {
+    fn rem_assign(&mut self, rhs: Self) {
+        self.0 %= rhs.0.max(1);
+    }
+}
+
 fn unit_multiplier(unit: &str) -> Result<f64, ParseError> {
     let value = match unit {
         "" | "b" | "byte" | "bytes" => 1.0,
@@ -605,5 +657,40 @@ mod tests {
         assert!(ByteSize::ZERO.is_zero());
         assert!(ByteSize(0).is_zero());
         assert!(!ByteSize(1).is_zero());
+    }
+
+    #[test]
+    fn clamp_helper() {
+        assert_eq!(ByteSize(10).clamp(ByteSize(5), ByteSize(15)), ByteSize(10));
+        assert_eq!(ByteSize(1).clamp(ByteSize(5), ByteSize(15)), ByteSize(5));
+        assert_eq!(ByteSize(20).clamp(ByteSize(5), ByteSize(15)), ByteSize(15));
+    }
+
+    #[test]
+    fn saturating_helpers() {
+        assert_eq!(
+            ByteSize(u64::MAX).saturating_add(ByteSize(1)),
+            ByteSize(u64::MAX)
+        );
+        assert_eq!(ByteSize(5).saturating_sub(ByteSize(10)), ByteSize(0));
+        assert_eq!(ByteSize(u64::MAX / 2 + 1).saturating_mul(2), ByteSize(u64::MAX));
+    }
+
+    #[test]
+    fn checked_remainder() {
+        assert_eq!(ByteSize(10).checked_rem(0), None);
+        assert_eq!(ByteSize(10).checked_rem(3), Some(ByteSize(1)));
+    }
+
+    #[test]
+    fn remainder_operations() {
+        assert_eq!(ByteSize(10) % 3, ByteSize(1));
+        assert_eq!(ByteSize(10) % ByteSize(3), ByteSize(1));
+        let mut size = ByteSize(10);
+        size %= 3;
+        assert_eq!(size, ByteSize(1));
+        let mut size = ByteSize(10);
+        size %= ByteSize(3);
+        assert_eq!(size, ByteSize(1));
     }
 }
